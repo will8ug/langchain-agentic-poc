@@ -6,11 +6,12 @@ from langchain.chat_models import init_chat_model
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.utils.uuid import uuid7
+from langchain_tavily import TavilySearch
 from langgraph.checkpoint.memory import InMemorySaver
 
 from model.llm import QwenConfig
 
-PROMPT = "Tell me a joke"
+PROMPT = "What's the latest releases of Python?"
 
 
 def build_agent():
@@ -26,8 +27,11 @@ def build_agent():
         model_provider="openai",
     )
 
+    search_tool = TavilySearch(max_results=5)
+
     return create_agent(
         model=model,
+        tools=[search_tool],
         checkpointer=InMemorySaver(),
     )
 
