@@ -1,5 +1,3 @@
-import os
-
 import streamlit as st
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
@@ -15,7 +13,7 @@ def get_checkpointer():
 def get_agent(model: str):
     llm = init_chat_model(
         model=model,
-        api_key=os.getenv("DASHSCOPE_API_KEY"),
+        api_key=st.secrets["DASHSCOPE_API_KEY"],
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         model_provider="openai",
     )

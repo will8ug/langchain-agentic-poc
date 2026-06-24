@@ -9,6 +9,7 @@ wheels/
 # Virtual environments
 .venv
 .env
+.streamlit/secrets.toml
 
 # IDE
 .idea/
@@ -19,3 +20,4 @@ wheels/
 Thumbs.db
 
 # Local temp
+streamlit-production-ready-way.md
