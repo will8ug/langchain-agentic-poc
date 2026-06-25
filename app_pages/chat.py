@@ -2,7 +2,7 @@ import streamlit as st
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 
-from services.agent_service import get_agent
+from services.agent_service import get_main_agent
 from ui.components.sidebar import sidebar
 
 
@@ -17,7 +17,7 @@ st.title("💬 AI Chat Assistant")
 
 model_name= sidebar()
 config: RunnableConfig = {"configurable": {"thread_id": st.session_state.thread_id}}
-agent = get_agent(model=model_name)
+agent = get_main_agent(model=model_name)
 
 render_chat_history(agent.get_state(config).values.get("messages", []))
 
