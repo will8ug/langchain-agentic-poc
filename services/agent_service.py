@@ -8,7 +8,7 @@ from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 
-from services.tools import web_search_tool
+from services.tools import web_search_tool, get_current_date
 
 
 @tool("research", description="Research a topic and return findings")
@@ -30,7 +30,11 @@ def get_main_agent(model: str):
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         model_provider="openai",
     )
-    return create_agent(model=llm, tools=[call_research_agent], checkpointer=get_checkpointer())
+    return create_agent(
+        model=llm,
+        tools=[get_current_date, call_research_agent],
+        checkpointer=get_checkpointer()
+    )
 
 @functools.lru_cache(maxsize=1)
 def research_agent():
