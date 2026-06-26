@@ -1,3 +1,6 @@
+import functools
+import os
+
 import streamlit as st
 from langchain.tools import tool
 from langchain.agents import create_agent
@@ -29,11 +32,11 @@ def get_main_agent(model: str):
     )
     return create_agent(model=llm, tools=[call_research_agent], checkpointer=get_checkpointer())
 
-@st.cache_resource
+@functools.lru_cache(maxsize=1)
 def research_agent():
     llm = init_chat_model(
         model="qwen3.6-plus-2026-04-02",
-        api_key=st.secrets["DASHSCOPE_API_KEY"],
+        api_key=os.environ["DASHSCOPE_API_KEY"],
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         model_provider="openai",
     )
