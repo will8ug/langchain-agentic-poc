@@ -1,3 +1,5 @@
+import logging
+
 import streamlit as st
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
@@ -33,6 +35,38 @@ def render_chat_history(messages: list[BaseMessage]) -> None:
         # ToolMessages are rendered inside the preceding AIMessage's expander
 
 
+def _stream_message_chunk(chunk, response_box, full_response: str) -> str:
+    if chunk.content:
+        full_response += chunk.content
+        response_box.markdown(full_response + " ▌")
+    return full_response
+
+
+def _stream_update(data, status) -> bool:
+    has_tool_calls = False
+    for node_name, update in data.items():
+        if node_name == "model":
+            last_msg = update["messages"][-1]
+            if isinstance(last_msg, AIMessage) and last_msg.tool_calls:
+                has_tool_calls = True
+                for tc in last_msg.tool_calls:
+                    with status:
+                        st.markdown(f"🔧 **Calling `{tc['name']}`**")
+                        st.json(tc["args"])
+        elif node_name == "tools":
+            for msg in update["messages"]:
+                if isinstance(msg, ToolMessage):
+                    content = msg.content
+                    if isinstance(content, list):
+                        content = str(content)
+                    if isinstance(content, str) and len(content) > 500:
+                        content = content[:500] + "..."
+                    with status:
+                        st.markdown(f"✅ **`{msg.name}`** returned:")
+                        st.text(content)
+    return has_tool_calls
+
+
 st.title("💬 AI Chat Assistant")
 
 model_name = sidebar()
@@ -62,41 +96,20 @@ if prompt := st.chat_input("Type your message..."):
             ):
                 if mode == "messages" and isinstance(data, tuple):
                     chunk, _metadata = data
-                    if chunk.content:
-                        full_response += chunk.content
-                        response_box.markdown(full_response + " ▌")
+                    full_response = _stream_message_chunk(chunk, response_box, full_response)
 
                 elif mode == "updates" and isinstance(data, dict):
-                    for node_name, update in data.items():
-                        if node_name == "model":
-                            last_msg = update["messages"][-1]
-                            if isinstance(last_msg, AIMessage) and last_msg.tool_calls:
-                                has_tool_calls = True
-                                for tc in last_msg.tool_calls:
-                                    with status:
-                                        st.markdown(f"🔧 **Calling `{tc['name']}`**")
-                                        st.json(tc["args"])
-                        elif node_name == "tools":
-                            for msg in update["messages"]:
-                                if isinstance(msg, ToolMessage):
-                                    content = msg.content
-                                    if isinstance(content, str) and len(content) > 500:
-                                        content = content[:500] + "..."
-                                    with status:
-                                        st.markdown(f"✅ **`{msg.name}`** returned:")
-                                        st.text(content)
+                    has_tool_calls = _stream_update(data, status) or has_tool_calls
 
             response_box.markdown(full_response)
 
-            if has_tool_calls:
-                status.update(
-                    label="Tool calls completed",
-                    state="complete",
-                    expanded=False,
-                )
-            else:
-                status.update(label="Done", state="complete", expanded=False)
+            status.update(
+                label="Tool calls completed" if has_tool_calls else "Done",
+                state="complete",
+                expanded=False,
+            )
 
         except Exception as e:
+            logging.exception("Agent stream failed")
             status.update(label="Error", state="error")
             st.error(f"❌ Error: {e}")
