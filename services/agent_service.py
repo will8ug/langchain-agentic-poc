@@ -2,6 +2,7 @@ import streamlit as st
 from langchain.tools import tool
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
+from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 
 from services.tools import web_search_tool
@@ -10,7 +11,7 @@ from services.tools import web_search_tool
 @tool("research", description="Research a topic and return findings")
 def call_research_agent(query: str):
     agent = research_agent()
-    result = agent.invoke(query)
+    result = agent.invoke({"messages": [HumanMessage(content=query)]})
     return result["messages"][-1].content
 
 
