@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.utils.uuid import uuid7
 from langchain_tavily import TavilySearch
@@ -11,7 +11,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 
 from model.llm import QwenConfig
 
-PROMPT = "What's the latest releases of Python?"
+PROMPT = "What's the latest LLM released by Anthropic?"
 
 
 def build_agent():
@@ -44,19 +44,43 @@ def query_streaming(prompt: str) -> None:
         }
     }
 
-    for chunk in agent.stream(
+    for mode, data in agent.stream(
         input={"messages": HumanMessage(prompt)},
         config=config,
-        stream_mode="values",
+        stream_mode=["messages", "updates"],
     ):
-        last_msg = chunk["messages"][-1]
-        if last_msg.content:
-            if isinstance(last_msg, AIMessage):
-                print(last_msg.content, end="", flush=True)
-            continue
+        if mode == "messages":
+            chunk, _metadata = data
+            if chunk.content:
+                if isinstance(chunk, AIMessage):
+                    print(chunk.content, end="", flush=True)
+                elif isinstance(chunk, ToolMessage):
+                    print(f"Tool message: {chunk.content}")
+                continue
 
-        if last_msg.tool_calls:
-            print(f"Calling tools: {[tc['name'] for tc in last_msg.tool_calls]}")
+            if chunk.tool_calls:
+                print(f"\ntool_calls")
+            #     print(f"\nchunk: {chunk}")
+            #     print(f"\nCalling tools: {[tc['name'] for tc in chunk.tool_calls]}")
+        elif mode == "updates":
+            for node_name, update in data.items():
+                if node_name == "model":
+                    last_msg = update["messages"][-1]
+                    if isinstance(last_msg, AIMessage) and last_msg.tool_calls:
+                        for tc in last_msg.tool_calls:
+                            print(f"🔧 **Calling `{tc['name']}`**")
+                            print(tc["args"])
+                elif node_name == "tools":
+                    for msg in update["messages"]:
+                        if isinstance(msg, ToolMessage):
+                            content = msg.content
+                            if isinstance(content, list):
+                                content = str(content)
+                            if isinstance(content, str) and len(content) > 500:
+                                content = content[:500] + "..."
+
+                            print(f"✅ **`{msg.name}`** returned:")
+                            print(content)
 
 
 def main() -> None:
