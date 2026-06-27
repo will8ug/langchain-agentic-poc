@@ -35,22 +35,22 @@ def render_chat_history(messages: list[BaseMessage]) -> None:
         # ToolMessages are rendered inside the preceding AIMessage's expander
 
 
-def _stream_message_chunk(chunk, response_box, full_response: str) -> str:
-    if chunk.content:
-        full_response += chunk.content
-        response_box.markdown(full_response + " ▌")
-    return full_response
+def _stream_message_chunk(_chunk, _response_box, _full_response: str) -> str:
+    if _chunk.content:
+        _full_response += _chunk.content
+        _response_box.markdown(_full_response + " ▌")
+    return _full_response
 
 
-def _stream_update(data, status) -> bool:
-    has_tool_calls = False
-    for node_name, update in data.items():
+def _stream_update(_data, _status_box) -> bool:
+    _has_tool_calls = False
+    for node_name, update in _data.items():
         if node_name == "model":
             last_msg = update["messages"][-1]
             if isinstance(last_msg, AIMessage) and last_msg.tool_calls:
-                has_tool_calls = True
+                _has_tool_calls = True
                 for tc in last_msg.tool_calls:
-                    with status:
+                    with _status_box:
                         st.markdown(f"🔧 **Calling `{tc['name']}`**")
                         st.json(tc["args"])
         elif node_name == "tools":
@@ -61,17 +61,17 @@ def _stream_update(data, status) -> bool:
                         content = str(content)
                     if isinstance(content, str) and len(content) > 500:
                         content = content[:500] + "..."
-                    with status:
+                    with _status_box:
                         st.markdown(f"✅ **`{msg.name}`** returned:")
                         st.text(content)
-    return has_tool_calls
+    return _has_tool_calls
 
 
 st.title("💬 AI Chat Assistant")
 
 model_name = sidebar()
-config: RunnableConfig = {"configurable": {"thread_id": st.session_state.thread_id}}
 agent = get_main_agent(model=model_name)
+config: RunnableConfig = {"configurable": {"thread_id": st.session_state.thread_id}}
 
 render_chat_history(agent.get_state(config).values.get("messages", []))
 
@@ -80,7 +80,7 @@ if prompt := st.chat_input("Type your message..."):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        status = st.status("Thinking...", expanded=True)
+        status_box = st.status("Thinking...", expanded=True)
         response_box = st.empty()
         full_response = ""
         has_tool_calls = False
@@ -99,11 +99,11 @@ if prompt := st.chat_input("Type your message..."):
                     full_response = _stream_message_chunk(chunk, response_box, full_response)
 
                 elif mode == "updates" and isinstance(data, dict):
-                    has_tool_calls = _stream_update(data, status) or has_tool_calls
+                    has_tool_calls = _stream_update(data, status_box) or has_tool_calls
 
             response_box.markdown(full_response)
 
-            status.update(
+            status_box.update(
                 label="Tool calls completed" if has_tool_calls else "Done",
                 state="complete",
                 expanded=False,
@@ -111,5 +111,5 @@ if prompt := st.chat_input("Type your message..."):
 
         except Exception as e:
             logging.exception("Agent stream failed")
-            status.update(label="Error", state="error")
+            status_box.update(label="Error", state="error")
             st.error(f"❌ Error: {e}")
