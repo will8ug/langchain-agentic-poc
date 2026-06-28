@@ -38,7 +38,7 @@ def render_chat_history(messages: list[BaseMessage]) -> None:
 def _stream_message_chunk(_chunk, _response_box, _full_response: str) -> str:
     if _chunk.content:
         _full_response += _chunk.content
-        _response_box.markdown(_full_response + " ▌")
+        _response_box.markdown(_full_response)
     return _full_response
 
 
@@ -56,14 +56,9 @@ def _stream_update(_data, _status_box) -> bool:
         elif node_name == "tools":
             for msg in update["messages"]:
                 if isinstance(msg, ToolMessage):
-                    content = msg.content
-                    if isinstance(content, list):
-                        content = str(content)
-                    if isinstance(content, str) and len(content) > 500:
-                        content = content[:500] + "..."
                     with _status_box:
                         st.markdown(f"✅ **`{msg.name}`** returned:")
-                        st.text(content)
+                        st.text(msg.content)
     return _has_tool_calls
 
 
