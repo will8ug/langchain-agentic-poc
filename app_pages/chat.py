@@ -32,13 +32,15 @@ def render_chat_history(messages: list[BaseMessage]) -> None:
                             if result:
                                 st.markdown(f"**Result:**")
                                 st.text(result.content)
-        # ToolMessages are rendered inside the preceding AIMessage's expander
 
 
 def _stream_message_chunk(_chunk, _response_box, _full_response: str) -> str:
+    if isinstance(_chunk, ToolMessage):
+        return _full_response    # tool messages are already shown in 'mode == "updates"' branch
+
     if _chunk.content:
         _full_response += _chunk.content
-        _response_box.markdown(_full_response)
+        _response_box.markdown(_full_response + " ▌")
     return _full_response
 
 

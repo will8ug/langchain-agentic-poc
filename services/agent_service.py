@@ -1,5 +1,6 @@
 import functools
 import os
+from datetime import datetime
 
 import streamlit as st
 from langchain.tools import tool
@@ -33,7 +34,7 @@ def get_main_agent(model: str):
     return create_agent(
         model=llm,
         tools=[get_current_date, call_research_agent],
-        system_prompt="You are a helpful assistant. Currently it's 2026 this year, please offer your answers based on that.",
+        system_prompt=f"You are a helpful assistant. Currently it's {datetime.now().year} this year, please offer your answers based on that.",
         checkpointer=get_checkpointer()
     )
 
