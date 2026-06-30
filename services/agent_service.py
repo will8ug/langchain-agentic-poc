@@ -34,7 +34,7 @@ def get_main_agent(model: str):
 @st.cache_resource
 def research_agent() -> CompiledSubAgent:
     llm = init_chat_model(
-        model="qwen3.6-plus-2026-04-02",
+        model="qwen3.6-flash-2026-04-16",
         api_key=st.secrets["DASHSCOPE_API_KEY"],
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         model_provider="openai",
