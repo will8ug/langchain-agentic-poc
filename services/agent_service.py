@@ -31,11 +31,11 @@ def get_main_agent(model: str):
         checkpointer=get_checkpointer()
     )
 
-@functools.lru_cache(maxsize=1)
+@st.cache_resource
 def research_agent() -> CompiledSubAgent:
     llm = init_chat_model(
         model="qwen3.6-plus-2026-04-02",
-        api_key=os.environ["DASHSCOPE_API_KEY"],
+        api_key=st.secrets["DASHSCOPE_API_KEY"],
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         model_provider="openai",
     )
